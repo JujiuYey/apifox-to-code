@@ -1,16 +1,18 @@
 import {
-  SchemaCollectionItem,
   SchemaCollectionDetail,
   SchemaCollection,
   Query,
   APIItem,
 } from '../types';
-import { getSpaces, getApiComment, addSchemaStr } from '../common';
 import {
-  getRootSchema,
-  getSchemaMapWithController,
-  setSchemaMap,
-} from '../store';
+  getSpaces,
+  getApiComment,
+  getSimpleComment,
+  addSchemaStr,
+  getApiName,
+  getQueryName,
+} from '../common';
+import { getRootSchema } from '../store';
 
 export function findModel(ref: string): SchemaCollectionDetail | null {
   if (!ref) {
@@ -24,7 +26,7 @@ export function findModel(ref: string): SchemaCollectionDetail | null {
     .filter((val) => {
       return (
         val.description.includes('entity') ||
-        val.description.includes('entity') ||
+        val.description.includes('vo') ||
         val.description.includes('dto')
       );
     })
@@ -38,9 +40,7 @@ export function findModel(ref: string): SchemaCollectionDetail | null {
 
 // 目标是解析成下面这样的形式，注释、类型
 // interface Department {
-//   /** 说明
-//    */
-//   id: number | null; //
+//   id: number | null;
 // }
 export function parseSchema(
   name: string | undefined,
@@ -58,7 +58,10 @@ export function parseSchema(
   str += `export interface ${name} {\n`;
   for (const [key, value] of Object.entries(schema.properties)) {
     const description = (value as any)?.description ?? '';
-    str += getApiComment('', description, 2);
+    if (description) {
+      str += getSimpleComment(description, 2);
+    }
+
     const typeString = (value as any)?.type
       ? (value as any)?.type.join(' | ')
       : 'any | unknown | null';
@@ -67,25 +70,31 @@ export function parseSchema(
     define = define.replace('array', 'Array<T>');
     str += define;
   }
-  str += `}`;
+  str += `}\r\n`;
   return str;
 }
 
 /**
  * @description Get方法的请求参数没有被封装，所以需要封装
- *              不考虑path传参的情况
+ *              不支持path传参的情况
  * @param queryList 请求参数列表
  */
 export function parseGetParam(controllerName: string, item: APIItem) {
   const queryList = item.api.parameters.query;
 
+  // 没有参数的情况
+  if (queryList.length <= 0) {
+    return;
+  }
+
+  const queryName = getQueryName(item);
+
   let str = '';
-  str += getApiComment(`${controllerName}-${item.name}`, 'QueryDto', 0);
-  str += `export interface QueryDto {\n`;
+  str += `export interface ${queryName} {\n`;
   queryList.forEach((query) => {
     str += parseParamSchema(query);
   });
-  str += `}`;
+  str += `}\r\n`;
 
   addSchemaStr(controllerName, str);
 
@@ -94,19 +103,17 @@ export function parseGetParam(controllerName: string, item: APIItem) {
 
 /**
  * @description delete方法的请求参数没有被封装，所以需要封装
- *              不考虑path传参的情况
  * @param queryList 请求参数列表
  */
 export function parseDeleteParam(controllerName: string, item: APIItem) {
   const queryList = item.api.parameters.query;
 
   let str = '';
-  str += getApiComment(`${controllerName}-${item.name}`, 'DeleteDto', 0);
   str += `export interface DeleteDto {\n`;
   queryList.forEach((query) => {
     str += parseParamSchema(query);
   });
-  str += `}`;
+  str += `}\r\n`;
 
   addSchemaStr(controllerName, str);
 
@@ -119,7 +126,7 @@ export function parseParamSchema(query: Query) {
   const description = query.description;
   const type = query.type;
   // 注释部分
-  str += getApiComment(name, description, 2);
+  str += getSimpleComment(description, 2);
   // 声明部分
   let define = `${getSpaces(2)}${name}: ${type};\n`;
   define = define.replace('integer', 'number');

@@ -4,7 +4,7 @@ import {
   getSchemaMapWithController,
   setSchemaMap,
 } from '../store';
-import { APIItem, ApiInterface, SchemaCollectionDetail } from '../types';
+import { APIItem, SchemaCollectionDetail } from '../types';
 
 /**
  * 生成空格字符串
@@ -37,6 +37,22 @@ export function getApiComment(
   str += `${spaces}* @name ${name}\n`;
   str += `${spaces}* @description ${description}\n`;
   str += `${spaces}*/ \n`;
+
+  return str;
+}
+
+/**
+ * 获取简单的注释
+ * @param name
+ * @param description
+ * @returns
+ */
+export function getSimpleComment(description: string, space: number) {
+  // 缩进
+  const spaces = getSpaces(space);
+
+  let str = '';
+  str += `${spaces}// ${description}\n`;
 
   return str;
 }
@@ -138,10 +154,10 @@ export function getResModelName(controllerName: string, item: APIItem) {
 
 /**
  * 构建请求方法
- * @param item
- * @param method
- * @param reqModelName
- * @param resModelName
+ * @param item 请求ApiItem
+ * @param method 方法名称
+ * @param reqModelName 请求的实体
+ * @param resModelName 返回的实体
  * @returns
  */
 export function getApiString(
@@ -167,11 +183,24 @@ export function getApiString(
   return str;
 }
 
+/**
+ * 获取请求实体的名称
+ * @param item
+ */
+export function getQueryName(item: APIItem) {
+  const name = getApiName(item.api.path) + 'QueryDto';
+  const firstChar = name.charAt(0);
+  const capitalizedStr = firstChar.toUpperCase() + name.slice(1);
+  return capitalizedStr;
+}
+
 export function addSchemaStr(controllerName: string, str: string) {
+  if (!str) return;
   let orginStr = getSchemaMapWithController(controllerName)
     ? getSchemaMapWithController(controllerName)
     : '';
   orginStr += str;
-  orginStr += `\n\r`;
+
+  // 存在重复添加的情况
   setSchemaMap(controllerName, orginStr);
 }

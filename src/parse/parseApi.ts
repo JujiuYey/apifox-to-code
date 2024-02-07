@@ -1,10 +1,16 @@
 import { APIItem, ApiCollectionItem, ApiInterface } from '../types';
 import { parseDeleteParam, parseGetParam } from './parseInterface';
-import { getResModelName, getApiString, getReqModelName } from '../common';
+import {
+  getResModelName,
+  getApiString,
+  getReqModelName,
+  getQueryName,
+} from '../common';
 import {
   getRootAPI,
   getRootSchema,
   setApiMap,
+  getApiMap,
   setRootAPI,
   setRootSchema,
 } from '../store';
@@ -61,7 +67,10 @@ export function parseApiItem(controllerName: string, item: APIItem) {
 export function parseGet(controllerName: string, item: APIItem) {
   parseGetParam(controllerName, item);
   const resModelName = getResModelName(controllerName, item);
-  return getApiString(item, 'get', 'QueryDto', resModelName);
+
+  const queryName = getQueryName(item);
+
+  return getApiString(item, 'get', queryName, resModelName);
 }
 
 export function parsePOST(controllerName: string, item: APIItem) {

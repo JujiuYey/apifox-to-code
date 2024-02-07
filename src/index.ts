@@ -30,6 +30,7 @@ function start() {
   const controllers = getRootAPI().map((item) => item.name);
   let codeMap = getCodeMap();
   const schemaMap = getSchemaMap();
+  console.log('🚀 ~ start ~ schemaMap:', schemaMap);
   const apiMap = getApiMap();
   controllers.forEach((item) => {
     if (!codeMap.has(item)) {
